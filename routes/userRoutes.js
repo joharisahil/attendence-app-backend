@@ -1,11 +1,11 @@
-const express = require('express');
+import express from 'express';
+import User from '../models/User.js'; // include `.js` for ES Modules
+
 const router = express.Router();
-const User = require('../models/User');
 
 // GET all users
-router.get('/', async (req, res) => {
-  const users = await User.find();
-  res.json(users);
+router.get('/', (req, res) => {
+  res.send('Users route working!');
 });
 
 // POST new user
@@ -16,4 +16,4 @@ router.post('/', async (req, res) => {
   res.json(newUser);
 });
 
-module.exports = router;
+export default router;
