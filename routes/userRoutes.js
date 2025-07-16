@@ -1,11 +1,15 @@
 import express from 'express';
-import User from '../models/User.js'; // include `.js` for ES Modules
+import User from '../models/User.js';
 
 const router = express.Router();
 
 // GET all users
 router.get('/', (req, res) => {
   res.send('Users route working!');
+});
+
+router.get('/profile', protect, authorizeRoles('user', 'admin'), (req, res) => {
+  res.json({ message: `Hello, ${req.user.role}` });
 });
 
 // POST new user

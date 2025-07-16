@@ -10,7 +10,19 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true
-  }
+  },
+  role: {
+  type: String,
+  enum: ['user', 'admin'],
+  default: 'admin'  // change made here
+  },
+  status: {
+  type: String,
+  enum: ['none', 'in', 'out'],
+  default: 'none'
+},
+inTime: Date,
+outTime: Date
 });
 
 // Hash password before saving

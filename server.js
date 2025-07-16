@@ -2,8 +2,15 @@ import express, { json } from 'express';
 import { connect } from 'mongoose';
 import { config } from 'dotenv';
 import cors from 'cors';
-import userRoutes from '../attendence-app-backend/routes/userRoutes.js'; 
-import authRoutes from '../attendence-app-backend/routes/authRoutes.js';
+//import userRoutes from '../attendence-app-backend/routes/userRoutes.js'; 
+
+
+// Load Routes
+import authRoutes from './routes/authRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import teamRoutes from './routes/teamRoutes.js';
+
 
 
 config();
@@ -21,8 +28,14 @@ connect(process.env.MONGO_URI)
 
 
 // Routes
-
+// Mount Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
+
+
+app.use('/api/team', teamRoutes);
+
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
