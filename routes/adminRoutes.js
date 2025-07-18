@@ -7,4 +7,5 @@ router.get('/', protect, adminOnly, (req, res) => {
   res.send('Welcome Admin!');
 });
 
+
 export default router;

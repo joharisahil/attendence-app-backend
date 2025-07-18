@@ -1,35 +1,39 @@
+// middleware/authMiddleware.js
 import jwt from 'jsonwebtoken';
-import Team from '../models/User.js'; // Or whatever your model is named
+import User from '../models/User.js';
 
-const protect = async (req, res, next) => {
+// Protect middleware
+export const protect = async (req, res, next) => {
   let token;
-
-  // Check for Authorization header
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
-      // Get token from header
       token = req.headers.authorization.split(' ')[1];
-
-      // Decode token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-      // Attach user to request
-      req.user = await Team.findById(decoded.id).select('-password');
-
-      // Move to the next middleware/route
+      req.user = await User.findById(decoded.id).select('-password');
       next();
     } catch (error) {
-      console.error('JWT decode failed:', error);
       res.status(401).json({ message: 'Not authorized, token failed' });
     }
-  }
-
-  if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
+  } else {
+    res.status(401).json({ message: 'No token provided' });
   }
 };
 
-export default protect;
+// Admin-only middleware
+export const adminOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    return next();
+  } else {
+    res.status(403).json({ message: 'Access denied. Admins only.' });
+  }
+};
+
+// ✅ Role-based access middleware
+export const authorizeRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: `Access denied for role: ${req.user.role}` });
+    }
+    next();
+  };
+};

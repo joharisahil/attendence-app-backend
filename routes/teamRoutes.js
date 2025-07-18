@@ -1,16 +1,16 @@
 import express from 'express';
-import {
-  markIn,
+import {  addTeamMember} from '../controllers/teamController.js';
+import{ markIn,
   markOut,
-  applyLeave,
-} from '../controllers/teamController.js';
-import { protect } from '../middleware/authMiddleware.js';
+  markLeave} from '../controllers/statusController.js';
+import { protect, adminOnly } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// All routes are protected
+router.post('/add', protect, adminOnly, addTeamMember); // ✅ This must exist
+
 router.post('/in', protect, markIn);
 router.post('/out', protect, markOut);
-router.post('/leave', protect, applyLeave);
+router.post('/leave', protect, markLeave);
 
 export default router;
