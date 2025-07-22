@@ -1,11 +1,21 @@
 import express from 'express';
-import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import {
+  getDashboardStats,
+  getAllTeamAttendance,
+  adminProfile,
+  updateAdminProfile
+} from '../controllers/adminController.js';
+
+import { protect , isAdmin} from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get('/', protect, adminOnly, (req, res) => {
-  res.send('Welcome Admin!');
-});
+// Apply both protect and isAdmin for all routes
+router.use(protect);
+router.use(isAdmin);
 
-
+router.get('/stats', protect, isAdmin, getDashboardStats);
+router.get('/attendance', protect, isAdmin, getAllTeamAttendance);
+router.get('/profile', protect, isAdmin, adminProfile);
+router.put('/profile/update', protect, isAdmin, updateAdminProfile);
 export default router;

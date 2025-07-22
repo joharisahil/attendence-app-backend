@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema({
+  name: {
+  type: String,
+  required: true
+  },
   email: {
     type: String,
     required: true,
@@ -16,17 +20,21 @@ const userSchema = new mongoose.Schema({
     enum: ['team', 'admin'],  
     default: 'admin'
   },
-  status: {
-    type: String,
-    enum: ['none', 'in', 'out', 'leave'],  
-    default: 'none'
-  },
+  under_admin: {
+    type: String, // or use mongoose.Schema.Types.ObjectId if you want to reference Admin
+    required: function () {
+      return this.role === 'team';
+    },},
   inTime: {
     type: Date
   },
   outTime: {
     type: Date
-  }
+  },
+  isStarEmployee: {
+  type: Boolean,
+  default: false
+}
 });
 
 // Hash password before saving

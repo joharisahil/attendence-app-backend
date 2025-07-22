@@ -1,16 +1,41 @@
 import express from 'express';
-import {  addTeamMember} from '../controllers/teamController.js';
-import{ markIn,
-  markOut,
-  markLeave} from '../controllers/statusController.js';
-import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import {
+  addTeamMember,
+  getTeamMembers,
+  removeTeamMember,
+  editTeamMember,
+  getTeamMemberAttendance
+} from '../controllers/teamController.js';
 
+import { protect, isAdmin } from '../middleware/authMiddleware.js';
+import { toggleStarEmployee, getStarEmployees } from '../controllers/teamController.js';
+
+
+//import { protect, adminOnly } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
-router.post('/add', protect, adminOnly, addTeamMember); // ✅ This must exist
+// All routes below are protected and admin-only
 
-router.post('/in', protect, markIn);
-router.post('/out', protect, markOut);
-router.post('/leave', protect, markLeave);
+// ➕ Add a new team member
+router.post('/add', protect, isAdmin, addTeamMember);
+
+// 📄 View all team members
+router.get('/all', protect, isAdmin, getTeamMembers);
+
+// 🗑️ Remove a team member by email
+router.delete('/remove', protect, isAdmin, removeTeamMember);
+
+// 📝 Edit a team member (email/role) by ID
+//router.put('/edit', protect, isAdmin, editTeamMember);
+
+// 📅 Get attendance of a specific team member by ID
+router.post('/attendance', protect, isAdmin, getTeamMemberAttendance);
+
+
+// Route: PATCH /api/team/star/:userId
+router.patch('/star', protect, isAdmin, toggleStarEmployee);
+
+// Get all star employees (admin only)
+router.get('/stars', protect, getStarEmployees);
 
 export default router;

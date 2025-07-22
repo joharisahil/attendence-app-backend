@@ -10,6 +10,8 @@ import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
+import attendanceRoutes from './routes/attendanceRoutes.js';
+
 
 
 
@@ -31,10 +33,12 @@ connect(process.env.MONGO_URI)
 // Mount Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/user', userRoutes);
 
 
 app.use('/api/team', teamRoutes);
+// Other middlewares
+app.use('/api/attendance', attendanceRoutes);
 
 
 app.use((req, res) => {
