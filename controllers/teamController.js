@@ -18,6 +18,11 @@ export const addTeamMember = async (req, res) => {
       return res.status(400).json({ message: 'Email is required.' });
     }
 
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    if (!gmailRegex.test(email)) {
+      return res.status(400).json({ message: 'Only valid @gmail.com addresses are allowed.' });
+    }
+
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
@@ -164,6 +169,11 @@ export const getTeamMemberAttendance = async (req, res) => {
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
     }
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    if (!gmailRegex.test(email)) {
+      return res.status(400).json({ message: 'Only valid @gmail.com addresses are allowed.' });
+    }
+
 
     const user = await User.findOne({ email });
 

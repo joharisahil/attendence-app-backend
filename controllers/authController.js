@@ -3,35 +3,51 @@ import Admin from '../models/Admin.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
+
 // Generate token
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '1h' });
 };
 
 // ✅ Register - only first time for Admin
+
 export const registerUser = async (req, res) => {
   try {
-    
     const { name, email, password } = req.body;
-    //console.log("admin created success 1");
-    
+
+    // 1. Validate required fields
     if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email, and password are required' });
-    }
-    const existingAdmin = await Admin.findOne({email});
-    if (existingAdmin) {
-      return res.status(403).json({ message: 'Admin already exists. Registration closed.' });
+      return res.status(400).json({ message: 'All fields are required.' });
     }
 
+    // 2. Validate proper Gmail format
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    if (!gmailRegex.test(email)) {
+      return res.status(400).json({ message: 'Only valid @gmail.com addresses are allowed.' });
+    }
+
+    // 3. Check if the email already exists as a team member
+    const existingTeamUser = await User.findOne({ email });
+    if (existingTeamUser) {
+      return res.status(409).json({ message: 'This email is already registered as a team member.' });
+    }
+
+    // 4. Check if an admin already exists
+      const existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
+      return res.status(409).json({ message: 'Admin with this email already exists.' });
+    }
+
+    // 5. Register admin
     const hashedPassword = await bcrypt.hash(password, 10);
    // console.log("yup");
     const newAdmin = new Admin({ name, email, password: hashedPassword });
     //console.log(newAdmin);
     await newAdmin.save();
-    console.log("hii@@@");
-    console.log("admin created success b");
+    //console.log("hii@@@");
+    //console.log("admin created success b");
     const token = generateToken(newAdmin._id, 'admin');
-    console.log("admin created success 2");
+    //console.log("admin created success 2");
     res.status(201).json({
       message: 'Admin registered successfully',
       token,
@@ -39,6 +55,7 @@ export const registerUser = async (req, res) => {
       role: 'admin',
     });
   } catch (err) {
+    console.error('Error in registerUser:', err);
     res.status(500).json({ message: 'Server error during registration' });
   }
 };
@@ -50,8 +67,10 @@ export const loginUser = async (req, res) => {
 
     // Check Admin model
     let user = await Admin.findOne({ email });
+    //console.log(user);
     if (user) {
       const isMatch = await bcrypt.compare(password, user.password);
+      //console.log(isMatch);
       if (!isMatch) return res.status(401).json({ message: 'Invalid email or password' });
 
       const token = generateToken(user._id, 'admin');
@@ -63,9 +82,9 @@ export const loginUser = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("DB password:", user.password);
-    console.log("Entered password:", password);
-    console.log("Match result:", await bcrypt.compare(password, user.password));
+    //console.log("DB password:", user.password);
+    //console.log("Entered password:", password);
+    //console.log("Match result:", await bcrypt.compare(password, user.password));
 
     if (!isMatch) return res.status(401).json({ message: 'Invalid email or password' });
 
