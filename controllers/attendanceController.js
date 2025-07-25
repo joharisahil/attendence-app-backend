@@ -12,10 +12,6 @@ export const markIn = async (req, res) => {
 
     // Find user (either team or admin)
     const isUserPresent = await User.findOne({ email }) || await Admin.findOne({ email });
-
-    console.log("Decoded user from token:", req.user);
-    console.log("User found:", isUserPresent);
-
     if (!isUserPresent) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -103,24 +99,24 @@ export const markOut = async (req, res) => {
 export const markLeave = async (req, res) => {
   try {
     const { email } = req.user;
-    const { description } = req.body;
+    const { description, date } = req.body;
 
-    const today = new Date().toISOString().split('T')[0];
+    const leaveDate = date ? new Date(date) : new Date(); // Use provided or default to today
+    const startOfDay = new Date(leaveDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(leaveDate.setHours(23, 59, 59, 999));
 
-    // Check if already marked today
     const existing = await Attendance.findOne({
       email,
-      date: { $gte: new Date(today), $lt: new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000) },
+      date: { $gte: startOfDay, $lte: endOfDay },
     });
 
     if (existing) {
-      return res.status(400).json({ message: 'You have already marked attendance today.' });
+      return res.status(400).json({ message: 'You have already marked attendance on this date.' });
     }
 
-    // Create leave entry
     const leave = new Attendance({
       email,
-      date: new Date(today),
+      date: startOfDay,
       status: 'leave',
       description,
     });

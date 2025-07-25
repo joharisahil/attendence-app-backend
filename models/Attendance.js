@@ -31,5 +31,6 @@ const attendanceSchema = new mongoose.Schema({
     default: "",
   },
 }, { timestamps: true });
+attendanceSchema.index({ email: 1, date: 1 }, { unique: true });
 
 export default mongoose.model("Attendance", attendanceSchema);
