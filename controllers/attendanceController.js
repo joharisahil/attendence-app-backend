@@ -1,6 +1,8 @@
 import Attendance from '../models/Attendance.js';
 import User from '../models/User.js';
 import Admin from '../models/Admin.js';
+import { getISTDate } from '../utils/timeUtils.js'; // Make sure this is imported
+
 
 console.log("Attendance controller active");
 
@@ -23,17 +25,30 @@ export const markIn = async (req, res) => {
     if (existing) {
       return res.status(400).json({ message: 'Already marked attendance today.' });
     }
+    const currentTime = getISTDate(); // ✅ define currentTime in IST
+
 
     // ✅ Create attendance record using email
     const attendance = new Attendance({
       email, // store email instead of user ID
       date: today,
       status: 'in',
-      timeIn: new Date(),
-      description,
+      timeIn: currentTime,
+      indescription : description,
     });
 
     await attendance.save();
+     // ✅ Update user's status and inTime
+    await User.findOneAndUpdate(
+      { email },
+      {
+        $set: {
+          status: 'in',
+          inTime: currentTime,
+          outTime: null,
+        }
+      }
+    );
 
     res.status(200).json({
       message: 'Status marked as IN',
@@ -50,15 +65,18 @@ export const markIn = async (req, res) => {
 // 📌 MARK OUT
 export const markOut = async (req, res) => {
   try {
-    const { email } = req.user; // Extracted from JWT
+    const { email } = req.user;
     const { description } = req.body;
 
     const today = new Date().toISOString().split('T')[0];
 
-    // Find today's attendance for this email
+    const startOfDay = new Date(today);
+    const endOfDay = new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000);
+
+    // Find today's attendance
     const attendance = await Attendance.findOne({
       email,
-      date: { $gte: new Date(today), $lt: new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000) },
+      date: { $gte: startOfDay, $lt: endOfDay },
     });
 
     if (!attendance) {
@@ -77,17 +95,32 @@ export const markOut = async (req, res) => {
       return res.status(400).json({ message: 'You must mark IN before marking OUT' });
     }
 
-    attendance.status = 'out';
-    attendance.timeOut = new Date();
-    attendance.description = description;
+   const currentTime = getISTDate(); // ✅ define currentTime in IST
 
+
+    // ✅ Update attendance
+    attendance.status = 'out';
+    attendance.timeOut = currentTime;
+    attendance.outDescription = description; // ✅ use correct field
     await attendance.save();
+
+    // ✅ Update user status and outTime
+    await User.findOneAndUpdate(
+      { email },
+      {
+        $set: {
+          status: 'out',
+          outTime: currentTime,
+        }
+      }
+    );
 
     res.status(200).json({
       message: 'Status marked as OUT',
-      timeOut: attendance.timeOut,
-      description,
+      timeOut: currentTime,
+      outDescription: description,
     });
+
   } catch (err) {
     console.error('Error marking OUT:', err);
     res.status(500).json({ message: 'Server error' });
@@ -101,7 +134,8 @@ export const markLeave = async (req, res) => {
     const { email } = req.user;
     const { description, date } = req.body;
 
-    const leaveDate = date ? new Date(date) : new Date(); // Use provided or default to today
+    const leaveDate = date ? new Date(date) : new Date();
+
     const startOfDay = new Date(leaveDate.setHours(0, 0, 0, 0));
     const endOfDay = new Date(leaveDate.setHours(23, 59, 59, 999));
 
@@ -118,12 +152,24 @@ export const markLeave = async (req, res) => {
       email,
       date: startOfDay,
       status: 'leave',
-      description,
+      description, // ✅ Used only for leave
     });
 
     await leave.save();
 
-    res.status(200).json({ message: 'Marked as on leave', description });
+    // ✅ Update user status
+    await User.findOneAndUpdate(
+      { email },
+      {
+        $set: { status: 'leave' }
+      }
+    );
+
+    res.status(200).json({
+      message: 'Marked as on leave',
+      description
+    });
+
   } catch (error) {
     console.error('Error marking LEAVE:', error);
     res.status(500).json({ message: 'Server error' });

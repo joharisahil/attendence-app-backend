@@ -25,11 +25,22 @@ const attendanceSchema = new mongoose.Schema({
   timeOut: {
     type: Date,
   },
-
-  description: {
+  
+   inDescription: {
     type: String,
     default: "",
   },
+
+  outDescription: {
+    type: String,
+    default: "",
+  },
+
+  // Leave-specific only
+  description: {
+    type: String,
+    default: "",
+  }
 }, { timestamps: true });
 attendanceSchema.index({ email: 1, date: 1 }, { unique: true });
 
