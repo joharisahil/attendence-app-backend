@@ -34,7 +34,12 @@ const userSchema = new mongoose.Schema({
   isStarEmployee: {
   type: Boolean,
   default: false
-}
+  },
+   status: {
+    type: String,
+    enum: ['none', 'in', 'out', 'leave'],
+    default: 'none'
+  }
 });
 
 // Hash password before saving
