@@ -1,7 +1,7 @@
 import Attendance from '../models/Attendance.js';
 import User from '../models/User.js';
 import Admin from '../models/Admin.js';
-import { getISTDate } from '../utils/timeUtils.js'; // Make sure this is imported
+import { getIsTDate } from '../utils/timeUtils.js'; // Make sure this is imported
 
 
 console.log("Attendance controller active");
@@ -25,7 +25,7 @@ export const markIn = async (req, res) => {
     if (existing) {
       return res.status(400).json({ message: 'Already marked attendance today.' });
     }
-    const currentTime = getISTDate(); // ✅ define currentTime in IST
+    const currentTime = getIsTDate(); // ✅ define currentTime in IST
 
 
     // ✅ Create attendance record using email
@@ -95,7 +95,7 @@ export const markOut = async (req, res) => {
       return res.status(400).json({ message: 'You must mark IN before marking OUT' });
     }
 
-   const currentTime = getISTDate(); // ✅ define currentTime in IST
+   const currentTime = getIsTDate(); // ✅ define currentTime in IST
 
 
     // ✅ Update attendance
