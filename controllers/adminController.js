@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import Attendance from '../models/Attendance.js';
+import Admin from '../models/Admin.js';
 
 // 📊 1. Get Dashboard Stats
 export const getDashboardStats = async (req, res) => {
@@ -31,8 +32,13 @@ export const getAllTeamAttendance = async (req, res) => {
 // 👤 3. Admin Profile
 export const adminProfile = async (req, res) => {
   try {
-    // You already have req.user injected from the middleware
-    const admin = await User.findOne({ email: req.user.email }).select('-password');
+    // Try fetching from User collection first
+    let admin = await User.findOne({ email: req.user.email }).select('-password');
+
+    // If not found, check Admin collection (if you use it)
+    if (!admin) {
+      admin = await Admin.findOne({ email: req.user.email }).select('-password');
+    }
 
     if (!admin) {
       return res.status(404).json({ message: 'Admin not found' });
@@ -44,7 +50,6 @@ export const adminProfile = async (req, res) => {
     res.status(500).json({ message: 'Error fetching profile' });
   }
 };
-
 
 // ✏️ 4. Update Admin Profile
 export const updateAdminProfile = async (req, res) => {
