@@ -31,10 +31,11 @@ export const getAllTeamAttendance = async (req, res) => {
 // 👤 3. Admin Profile
 export const adminProfile = async (req, res) => {
   try {
+    // You already have req.user injected from the middleware
     const admin = await User.findOne({ email: req.user.email }).select('-password');
 
-    if (!admin || admin.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied' });
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
     }
 
     res.status(200).json(admin);
