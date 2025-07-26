@@ -34,7 +34,7 @@ export const markIn = async (req, res) => {
       date: today,
       status: 'in',
       timeIn: currentTime,
-      indescription : description,
+      inDescription : description,
     });
 
     await attendance.save();
