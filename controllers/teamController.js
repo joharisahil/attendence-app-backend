@@ -82,15 +82,47 @@ export const addTeamMember = async (req, res) => {
 // ✅ View All Team Members (excluding self/admins)
 export const getTeamMembers = async (req, res) => {
   try {
-    const adminEmail = req.user.email; // ✅ from JWT auth middleware
-    const users = await User.find({ role: 'team',
-      under_admin: adminEmail
-     }, '-password');
-    res.json(users);
+    const adminEmail = req.user.email;
+
+    const users = await User.find(
+      { role: 'team', under_admin: adminEmail },
+      '-password'
+    );
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // For each user, find today's attendance from the Attendance model
+    const enhancedUsers = await Promise.all(
+      users.map(async (user) => {
+        const todayAttendance = await Attendance.findOne({
+          email: user.email,
+          date: {
+            $gte: new Date(todayStr),
+            $lt: new Date(new Date(todayStr).getTime() + 24 * 60 * 60 * 1000)
+          }
+        });
+
+        return {
+          ...user.toObject(),
+          attendance: todayAttendance
+            ? {
+                timeIn: todayAttendance.timeIn,
+                timeOut: todayAttendance.timeOut,
+                inDescription: todayAttendance.inDescription,
+                outDescription: todayAttendance.outDescription,
+                status: todayAttendance.status
+              }
+            : null
+        };
+      })
+    );
+
+    res.json(enhancedUsers);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching team members', error: err.message });
   }
 };
+
 
 // ✅ Remove Team Member
 
