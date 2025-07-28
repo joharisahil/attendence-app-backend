@@ -3,12 +3,26 @@ import User from '../models/User.js';
 import Attendance from '../models/Attendance.js';
 
 // ✅ Get logged-in user profile
-export const getUserProfile = (req, res) => {
-  res.json({
-    message: 'User profile accessed successfully',
-    user: req.user, // Comes from authMiddleware
-  });
+
+
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.user.email }).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      message: 'User profile accessed successfully',
+      user,
+    });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
+
 
 // ✅ Update user profile (only password)
 /*export const updateUserProfile = async (req, res) => {
