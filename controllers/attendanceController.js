@@ -1,12 +1,9 @@
+
+// 📌 MARK IN
 import Attendance from '../models/Attendance.js';
 import User from '../models/User.js';
 import Admin from '../models/Admin.js';
-import { getIsTTime } from '../utils/getISTDate.js'; // Make sure this is imported
 
-
-console.log("Attendance controller active");
-
-// 📌 MARK IN
 export const markIn = async (req, res) => {
   try {
     const { email } = req.user;
@@ -15,9 +12,8 @@ export const markIn = async (req, res) => {
     const user = await User.findOne({ email }) || await Admin.findOne({ email });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const now = new Date();
+    const now = new Date(); // store full Date object
     const todayDate = now.toISOString().split('T')[0]; // yyyy-mm-dd
-    const currentTime = getIsTTime(); // 👉 formatted 'HH:mm'
 
     const alreadyMarked = await Attendance.findOne({ email, date: todayDate });
     if (alreadyMarked) {
@@ -28,7 +24,7 @@ export const markIn = async (req, res) => {
       email,
       date: todayDate,
       status: 'in',
-      timeIn: currentTime,
+      timeIn: now, // store full date-time
       inDescription: description || '',
     });
 
@@ -39,7 +35,7 @@ export const markIn = async (req, res) => {
       {
         $set: {
           status: 'in',
-          inTime: currentTime,
+          inTime: now, // also full date-time
           outTime: null,
         },
       }
@@ -47,7 +43,7 @@ export const markIn = async (req, res) => {
 
     res.status(200).json({
       message: 'Marked IN successfully',
-      time: currentTime,
+      time: now,
       description: description || '',
     });
 
@@ -63,13 +59,11 @@ export const markOut = async (req, res) => {
     const { email } = req.user;
     const { description } = req.body;
 
-    const today = new Date().toISOString().split('T')[0];
-    const startOfDay = new Date(today);
-    const endOfDay = new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000);
-
+    const today = new Date().toISOString().split('T')[0]; // 'yyyy-mm-dd'
+    
     const attendance = await Attendance.findOne({
       email,
-      date: { $gte: startOfDay, $lt: endOfDay },
+      date: today, // directly matching the `yyyy-mm-dd` string
     });
 
     if (!attendance) {
@@ -88,10 +82,10 @@ export const markOut = async (req, res) => {
       return res.status(400).json({ message: 'You must mark IN before marking OUT' });
     }
 
-    const currentTime = getIsTTime(); // 🕒 formatted "HH:mm"
+    const now = new Date(); // 🕒 full Date object
 
     attendance.status = 'out';
-    attendance.timeOut = currentTime;
+    attendance.timeOut = now;
     attendance.outDescription = description || '';
     await attendance.save();
 
@@ -100,14 +94,14 @@ export const markOut = async (req, res) => {
       {
         $set: {
           status: 'out',
-          outTime: currentTime,
+          outTime: now,
         }
       }
     );
 
     res.status(200).json({
       message: 'Status marked as OUT',
-      timeOut: currentTime,
+      timeOut: now,
       outDescription: description || '',
     });
 
@@ -116,6 +110,7 @@ export const markOut = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 // 📌 MARK LEAVE
 export const markLeave = async (req, res) => {

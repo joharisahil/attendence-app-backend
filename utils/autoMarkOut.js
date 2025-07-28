@@ -2,28 +2,25 @@
 import cron from 'node-cron';
 import Attendance from '../models/Attendance.js';
 import User from '../models/User.js';
-import { getIsTTime } from '../utils/getISTDate.js';
 
-// Runs every day at 11:59 PM IST
+// Runs every day at 11:59 PM IST (which is 18:29 UTC)
 cron.schedule('29 18 * * *', async () => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const startOfDay = new Date(today);
-    const endOfDay = new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000);
+    const today = new Date().toISOString().split('T')[0]; // 'yyyy-mm-dd'
+    const now = new Date(); // full Date object
 
-    // Find all IN users who haven't marked OUT
+    // Find all IN users who haven't marked OUT today
     const pendingOuts = await Attendance.find({
-      date: { $gte: startOfDay, $lt: endOfDay },
+      date: today,
       status: 'in',
     });
 
     for (const record of pendingOuts) {
       const email = record.email;
-      const currentTime = getIsTTime();
 
       // Update attendance
       record.status = 'out';
-      record.timeOut = currentTime;
+      record.timeOut = now;
       record.outDescription = 'Auto-marked OUT due to inactivity';
       await record.save();
 
@@ -33,14 +30,15 @@ cron.schedule('29 18 * * *', async () => {
         {
           $set: {
             status: 'out',
-            outTime: currentTime,
+            outTime: now,
           },
         }
       );
 
-      console.log(`Auto-marked OUT for ${email}`);
+      console.log(`✅ Auto-marked OUT for ${email}`);
     }
+
   } catch (err) {
-    console.error('Auto-mark-out failed:', err);
+    console.error('❌ Auto-mark-out failed:', err);
   }
 });
