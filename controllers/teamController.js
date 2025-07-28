@@ -162,6 +162,8 @@ export const editTeamMember = async (req, res) => {
 };
 
 // ✅ View Attendance of a Specific Team Member
+// controller/statusController.js
+
 export const getTeamMemberAttendance = async (req, res) => {
   try {
     const { email } = req.body;
@@ -169,19 +171,20 @@ export const getTeamMemberAttendance = async (req, res) => {
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
     }
+
     const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
     if (!gmailRegex.test(email)) {
       return res.status(400).json({ message: 'Only valid @gmail.com addresses are allowed.' });
     }
 
-
+    // Check if the user exists and is a team member
     const user = await User.findOne({ email });
-
     if (!user || user.role !== 'team') {
       return res.status(404).json({ message: 'Team member not found' });
     }
 
-    const attendance = await Attendance.find({ user: user._id }).sort({ date: -1 });
+    // Fetch attendance by email
+    const attendance = await Attendance.find({ email }).sort({ date: -1 });
 
     res.status(200).json({
       email: user.email,
@@ -195,6 +198,7 @@ export const getTeamMemberAttendance = async (req, res) => {
     });
   }
 };
+
 
 // Mark or unmark a team member as Star Employee
 // Toggle star employee status
