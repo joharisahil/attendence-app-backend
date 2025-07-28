@@ -12,7 +12,7 @@ import userRoutes from './routes/userRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
 
-
+import './utils/autoMarkOut.js'; 
 
 
 config();

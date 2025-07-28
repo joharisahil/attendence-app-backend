@@ -1,7 +1,7 @@
 import Attendance from '../models/Attendance.js';
 import User from '../models/User.js';
 import Admin from '../models/Admin.js';
-import { getIsTDate } from '../utils/timeUtils.js'; // Make sure this is imported
+import { getIsTTime } from '../utils/getISTDate.js'; // Make sure this is imported
 
 
 console.log("Attendance controller active");
@@ -12,33 +12,28 @@ export const markIn = async (req, res) => {
     const { email } = req.user;
     const { description } = req.body;
 
-    // Find user (either team or admin)
-    const isUserPresent = await User.findOne({ email }) || await Admin.findOne({ email });
-    if (!isUserPresent) {
-      return res.status(404).json({ message: 'User not found' });
+    const user = await User.findOne({ email }) || await Admin.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const now = new Date();
+    const todayDate = now.toISOString().split('T')[0]; // yyyy-mm-dd
+    const currentTime = getIsTTime(); // 👉 formatted 'HH:mm'
+
+    const alreadyMarked = await Attendance.findOne({ email, date: todayDate });
+    if (alreadyMarked) {
+      return res.status(400).json({ message: 'Already marked IN for today' });
     }
 
-    const today = new Date().toISOString().split('T')[0];
-
-    // ✅ Check if already marked today
-    const existing = await Attendance.findOne({ email, date: today });
-    if (existing) {
-      return res.status(400).json({ message: 'Already marked attendance today.' });
-    }
-    const currentTime = getIsTDate(); // ✅ define currentTime in IST
-
-
-    // ✅ Create attendance record using email
     const attendance = new Attendance({
-      email, // store email instead of user ID
-      date: today,
+      email,
+      date: todayDate,
       status: 'in',
       timeIn: currentTime,
-      inDescription : description,
+      inDescription: description || '',
     });
 
     await attendance.save();
-     // ✅ Update user's status and inTime
+
     await User.findOneAndUpdate(
       { email },
       {
@@ -46,19 +41,19 @@ export const markIn = async (req, res) => {
           status: 'in',
           inTime: currentTime,
           outTime: null,
-        }
+        },
       }
     );
 
     res.status(200).json({
-      message: 'Status marked as IN',
-      time: attendance.timeIn,
-      description,
+      message: 'Marked IN successfully',
+      time: currentTime,
+      description: description || '',
     });
 
   } catch (err) {
     console.error('Error marking IN:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -69,11 +64,9 @@ export const markOut = async (req, res) => {
     const { description } = req.body;
 
     const today = new Date().toISOString().split('T')[0];
-
     const startOfDay = new Date(today);
     const endOfDay = new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000);
 
-    // Find today's attendance
     const attendance = await Attendance.findOne({
       email,
       date: { $gte: startOfDay, $lt: endOfDay },
@@ -95,16 +88,13 @@ export const markOut = async (req, res) => {
       return res.status(400).json({ message: 'You must mark IN before marking OUT' });
     }
 
-   const currentTime = getIsTDate(); // ✅ define currentTime in IST
+    const currentTime = getIsTTime(); // 🕒 formatted "HH:mm"
 
-
-    // ✅ Update attendance
     attendance.status = 'out';
     attendance.timeOut = currentTime;
-    attendance.outDescription = description; // ✅ use correct field
+    attendance.outDescription = description || '';
     await attendance.save();
 
-    // ✅ Update user status and outTime
     await User.findOneAndUpdate(
       { email },
       {
@@ -118,7 +108,7 @@ export const markOut = async (req, res) => {
     res.status(200).json({
       message: 'Status marked as OUT',
       timeOut: currentTime,
-      outDescription: description,
+      outDescription: description || '',
     });
 
   } catch (err) {
@@ -126,7 +116,6 @@ export const markOut = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
 
 // 📌 MARK LEAVE
 export const markLeave = async (req, res) => {
