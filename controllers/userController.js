@@ -78,3 +78,31 @@ export const getMyStatusToday = async (req, res) => {
     res.status(500).json({ message: 'Error checking today\'s status' });
   }
 };
+
+
+export const getStarEmployeesForUser = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+
+    // Fetch the current user's record to get their associated admin
+    const currentUser = await User.findOne({ email: userEmail });
+
+    if (!currentUser || currentUser.role !== 'team') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const adminEmail = currentUser.under_admin; // assuming this is the reference field
+
+    // Find all star employees under the same admin
+    const starEmployees = await User.find({
+      isStarEmployee: true,
+      role: 'team',
+      under_admin: adminEmail,
+    }).select('-password');
+
+    res.status(200).json(starEmployees);
+  } catch (err) {
+    console.error('Error fetching star employees for user:', err);
+    res.status(500).json({ message: 'Server error fetching star employees' });
+  }
+};
