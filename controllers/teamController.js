@@ -253,10 +253,16 @@ export const toggleStarEmployee = async (req, res) => {
 // Get all star employees
 export const getStarEmployees = async (req, res) => {
   try {
-    const starEmployees = await User.find({ isStarEmployee: true, role: 'team' }).select('-password');
+    const adminId = req.user.id; // assuming JWT middleware sets req.user
+    const starEmployees = await User.find({
+      isStarEmployee: true,
+      role: 'team',
+      addedBy: adminId // filter only those added by this admin
+    }).select('-password');
+
     res.status(200).json(starEmployees);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Server error fetching star employees' });
   }
 };
-
