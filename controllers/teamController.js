@@ -84,38 +84,32 @@ export const getTeamMembers = async (req, res) => {
   try {
     const adminEmail = req.user.email;
 
+    // Fetch users with attendance field included
     const users = await User.find(
       { role: 'team', under_admin: adminEmail },
       '-password'
     );
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const enhancedUsers = users.map(user => {
+      // Get today's date string in YYYY-MM-DD
+      const todayStr = new Date().toISOString().split('T')[0];
 
-    // For each user, find today's attendance from the Attendance model
-    const enhancedUsers = await Promise.all(
-      users.map(async (user) => {
-        const todayAttendance = await Attendance.findOne({
-          email: user.email,
-          date: {
-            $gte: new Date(todayStr),
-            $lt: new Date(new Date(todayStr).getTime() + 24 * 60 * 60 * 1000)
-          }
-        });
+      // Find today's attendance
+      const todayAttendance = user.attendance?.find(entry => {
+        const entryDate = new Date(entry.date).toISOString().split('T')[0];
+        return entryDate === todayStr;
+      });
 
-        return {
-          ...user.toObject(),
-          attendance: todayAttendance
-            ? {
-                timeIn: todayAttendance.timeIn,
-                timeOut: todayAttendance.timeOut,
-                inDescription: todayAttendance.inDescription,
-                outDescription: todayAttendance.outDescription,
-                status: todayAttendance.status
-              }
-            : null
-        };
-      })
-    );
+      // Add indesc and outdesc if available
+      const indesc = todayAttendance?.inDescription || '';
+      const outdesc = todayAttendance?.outDescription || '';
+
+      return {
+        ...user.toObject(), // Convert Mongoose document to plain object
+        indesc,
+        outdesc
+      };
+    });
 
     res.json(enhancedUsers);
   } catch (err) {
