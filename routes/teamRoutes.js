@@ -36,6 +36,6 @@ router.post('/attendance', protect, isAdmin, getTeamMemberAttendance);
 router.patch('/star', protect, isAdmin, toggleStarEmployee);
 
 // Get all star employees (admin only)
-router.get('/stars', protect, getStarEmployees);
+router.get('/stars', protect,isAdmin, getStarEmployees);
 
 export default router;
