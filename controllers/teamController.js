@@ -261,13 +261,14 @@ export const toggleStarEmployee = async (req, res) => {
 // Get all star employees
 export const getStarEmployees = async (req, res) => {
   try {
-    const adminId = req.user.id; // assuming JWT middleware sets req.user
+    const adminEmail = req.user.email; // assuming JWT middleware sets req.user
+    console.log("this is admin email",adminEmail);
     const starEmployees = await User.find({
       isStarEmployee: true,
       role: 'team',
-      addedBy: adminId // filter only those added by this admin
+      under_admin: adminEmail, // assuming 'createdBy' is used for team members
     }).select('-password');
-
+    console.log("this is star emp",starEmployees);
     res.status(200).json(starEmployees);
   } catch (err) {
     console.error(err);
