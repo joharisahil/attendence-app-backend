@@ -230,12 +230,18 @@ export const getTeamMemberAttendance = async (req, res) => {
 // Toggle star employee status
 export const toggleStarEmployee = async (req, res) => {
   const { email } = req.body;
+  const adminEmail = req.user.email; // JWT should populate req.user
 
   try {
-    const user = await User.findOne({ email });
+    // Restrict to team members created by this admin
+    const user = await User.findOne({
+      email,
+      role: 'team',
+      under_admin: adminEmail,
+    });
 
-    if (!user || user.role !== 'team') {
-      return res.status(404).json({ message: 'Team member not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'Team member not found or not under your team' });
     }
 
     user.isStarEmployee = !user.isStarEmployee;
@@ -246,9 +252,11 @@ export const toggleStarEmployee = async (req, res) => {
       user,
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Server error while updating star status' });
   }
 };
+
 
 // Get all star employees
 export const getStarEmployees = async (req, res) => {
