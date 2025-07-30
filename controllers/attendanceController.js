@@ -44,7 +44,7 @@ export const markIn = async (req, res) => {
     res.status(200).json({
       message: 'Marked IN successfully',
       time: now,
-      description: description || '',
+      inDescription: attendance.inDescription || '',
     });
 
   } catch (err) {
@@ -102,7 +102,7 @@ export const markOut = async (req, res) => {
     res.status(200).json({
       message: 'Status marked as OUT',
       timeOut: now,
-      outDescription: description || '',
+      outDescription: attendance.outDescription || '',
     });
 
   } catch (err) {
