@@ -44,7 +44,7 @@ export const markIn = async (req, res) => {
     res.status(200).json({
       message: 'Marked IN successfully',
       time: now,
-      inDescription: attendance.inDescription || '',
+      inDescription: description || 'empty',
     });
 
   } catch (err) {
@@ -86,7 +86,7 @@ export const markOut = async (req, res) => {
 
     attendance.status = 'out';
     attendance.timeOut = now;
-    attendance.outDescription = description || '';
+    attendance.outDescription = description || 'empty';
     await attendance.save();
 
     await User.findOneAndUpdate(
@@ -102,7 +102,7 @@ export const markOut = async (req, res) => {
     res.status(200).json({
       message: 'Status marked as OUT',
       timeOut: now,
-      outDescription: attendance.outDescription || '',
+      outDescription: description || '',
     });
 
   } catch (err) {
