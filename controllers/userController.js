@@ -82,15 +82,23 @@ export const getMyStatusToday = async (req, res) => {
       statusDate = outDateStr === todayDateStr ? 'out' : 'idle';
     } else if (user.status === 'leave') {
       // Assuming leave is only valid for the day it's set
-      const leaveSetDate = user.updatedAt || user.inTime || user.outTime || user.createdAt;
-      const leaveDateStr = new Date(leaveSetDate.getTime() + istOffset).toISOString().split('T')[0];
-      statusDate = leaveDateStr === todayDateStr ? 'leave' : 'idle';
+      const latestLeave = await Attendance.findOne({
+        email,
+        status: 'leave'
+      }).sort({ date: -1 });
+
+      {
+        const leaveDateStr = new Date(latestLeave.date.getTime() + istOffset).toISOString().split('T')[0];
+        if (leaveDateStr === todayDateStr) {
+          return res.json({ status: 'leave', timestamp: latestLeave.date });
+        }
+      }
     } else {
       statusDate = 'idle';
     }
 
     return res.json({
-      status: statusDate,
+      status: 'idle',
       timestamp: user.inTime || user.outTime || null,
     });
 
