@@ -78,46 +78,37 @@ export const addTeamMember = async (req, res) => {
   }
 };
 
-
-// ✅ View All Team Members (excluding self/admins)
 export const getTeamMembers = async (req, res) => {
   try {
     const adminEmail = req.user.email;
 
-    // Fetch users with attendance field included
+    // Get all team members under this admin
     const users = await User.find(
       { role: 'team', under_admin: adminEmail },
       '-password'
     );
 
-    const enhancedUsers = users.map(user => {
-      // Get today's date string in YYYY-MM-DD
-      const todayStr = new Date().toISOString().split('T')[0];
+    // For each user, get their latest attendance entry
+    const enhancedUsers = await Promise.all(
+      users.map(async user => {
+        const latestAttendance = await Attendance.findOne({ email: user.email })
+          .sort({ date: -1 }); // Get the latest attendance record
 
-      // Find today's attendance
-      const todayAttendance = user.attendance?.find(entry => {
-        const entryDate = new Date(entry.date).toISOString().split('T')[0];
-        return entryDate === todayStr;
-      });
-
-      // Add indesc and outdesc if available
-      const indesc = todayAttendance?.inDescription || '';
-      const outdesc = todayAttendance?.outDescription || '';
-
-      return {
-        ...user.toObject(), // Convert Mongoose document to plain object
-        indesc,
-        outdesc
-      };
-    });
+        return {
+          ...user.toObject(),
+          status: latestAttendance?.status || 'none',
+          indesc: latestAttendance?.inDescription || '',
+          outdesc: latestAttendance?.outDescription || '',
+        };
+      })
+    );
 
     res.json(enhancedUsers);
   } catch (err) {
+    console.error('Error fetching team members:', err);
     res.status(500).json({ message: 'Error fetching team members', error: err.message });
   }
 };
-
-
 // ✅ Remove Team Member
 
 export const removeTeamMember = async (req, res) => {
