@@ -77,7 +77,7 @@ export const addTeamMember = async (req, res) => {
     res.status(500).json({ message: 'Error adding team member', error: err.message });
   }
 };
-
+//get all team members
 export const getTeamMembers = async (req, res) => {
   try {
     const adminEmail = req.user.email;

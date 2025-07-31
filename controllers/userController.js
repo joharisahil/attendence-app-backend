@@ -56,28 +56,50 @@ export const getMyAttendance = async (req, res) => {
 };
 
 // ✅ (Optional) Get today’s status
+
 export const getMyStatusToday = async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const email = req.user.email;
 
-    const record = await Attendance.findOne({
-      user: req.user.id,
-      createdAt: { $gte: today },
-    });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!record) {
-      return res.json({ status: 'Not marked yet today' });
+    // Get today's date in IST (Indian Standard Time)
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    const istNow = new Date(now.getTime() + istOffset);
+
+    // Extract only the date portion for comparison
+    const todayDateStr = istNow.toISOString().split('T')[0];
+
+    let statusDate = null;
+
+    if (user.status === 'in' && user.inTime) {
+      const inDateStr = new Date(user.inTime.getTime() + istOffset).toISOString().split('T')[0];
+      statusDate = inDateStr === todayDateStr ? 'in' : 'idle';
+    } else if (user.status === 'out' && user.outTime) {
+      const outDateStr = new Date(user.outTime.getTime() + istOffset).toISOString().split('T')[0];
+      statusDate = outDateStr === todayDateStr ? 'out' : 'idle';
+    } else if (user.status === 'leave') {
+      // Assuming leave is only valid for the day it's set
+      const leaveSetDate = user.updatedAt || user.inTime || user.outTime || user.createdAt;
+      const leaveDateStr = new Date(leaveSetDate.getTime() + istOffset).toISOString().split('T')[0];
+      statusDate = leaveDateStr === todayDateStr ? 'leave' : 'idle';
+    } else {
+      statusDate = 'idle';
     }
 
-    res.json({
-      status: record.status,
-      timestamp: record.createdAt,
+    return res.json({
+      status: statusDate,
+      timestamp: user.inTime || user.outTime || null,
     });
+
   } catch (err) {
-    res.status(500).json({ message: 'Error checking today\'s status' });
+    console.error('Error fetching status:', err);
+    return res.status(500).json({ message: 'Error checking today\'s status' });
   }
 };
+
 
 
 export const getStarEmployeesForUser = async (req, res) => {
