@@ -96,3 +96,36 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: 'Server error during login' });
   }
 };
+
+
+// POST /auth/forgot-password
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    res.status(200).json({ token }); // front-end will use this to send the email
+  } catch (err) {
+   console.error("Error generating reset token:", err);
+    res.status(500).json({ message: 'Error generating reset token' });
+  }
+};
+
+
+export const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (err) {
+    res.status(400).json({ message: 'Invalid or expired token' });
+  }
+};

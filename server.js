@@ -3,7 +3,7 @@ import { connect } from 'mongoose';
 import { config } from 'dotenv';
 import cors from 'cors';
 //import userRoutes from '../attendence-app-backend/routes/userRoutes.js'; 
-
+import './cronJobs/expireLeaveRequests.js';
 
 // Load Routes
 import authRoutes from './routes/authRoutes.js';
@@ -11,7 +11,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
-
+import leaveRoutes from './routes/leaveRoutes.js';
 import './utils/autoMarkOut.js'; 
 
 
@@ -39,6 +39,8 @@ app.use('/api/user', userRoutes);
 app.use('/api/team', teamRoutes);
 // Other middlewares
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/leave', leaveRoutes);
+
 
 
 app.use((req, res) => {
