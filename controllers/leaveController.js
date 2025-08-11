@@ -129,3 +129,22 @@ export const rejectLeave = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// GET: Fetch all pending leave requests (Admin only)
+export const getPendingLeaveRequests = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can view pending leave requests' });
+    }
+
+    const pendingRequests = await LeaveRequest.find({ status: 'pending' })
+      .populate('user', 'name email role')
+      .sort({ date: 1 }); // oldest first
+
+    res.status(200).json(pendingRequests);
+  } catch (error) {
+    console.error('Error fetching pending leave requests:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
