@@ -1,7 +1,9 @@
 // controllers/userController.js
 import User from '../models/User.js';
 import Attendance from '../models/Attendance.js';
-
+import moment from "moment";
+import Leave from "../models/LeaveRequest.js";
+import LeaveRequest from '../models/LeaveRequest.js';
 // ✅ Get logged-in user profile
 
 
@@ -58,48 +60,41 @@ export const getMyAttendance = async (req, res) => {
 
 export const getMyStatusToday = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
+    const today = moment().format("YYYY-MM-DD");
 
-    // Find the latest attendance record for this user
-    const latestAttendance = await Attendance.findOne({ user: userId })
-      .sort({ createdAt: -1 });
+    // 1. Get last attendance record
+    const lastAttendance = await Attendance.findOne({ user: userId })
+      .sort({ date: -1 });
 
-    if (!latestAttendance) {
-      return res.json({ status: 'idle' });
+    if (lastAttendance) {
+      const lastDate = moment(lastAttendance.date).format("YYYY-MM-DD");
+
+      // 2. If last record is from today → return its status
+      if (lastDate === today) {
+        return res.status(200).json({ status: lastAttendance.status });
+      }
     }
 
-    // Get today's date in simple format
-    const today = new Date().toDateString();
+    // 3. If no attendance today → check for leave
+    const leaveToday = await LeaveRequest.findOne({
+      user: userId,
+      status: "approved",
+      date: today
+    });
 
-    // Check for leave status first
-    if (
-      latestAttendance.status === 'leave' &&
-      new Date(latestAttendance.createdAt).toDateString() === today
-    ) {
-      return res.json({ status: 'leave' });
+    if (leaveToday) {
+      return res.status(200).json({ status: "leave" });
     }
 
-    // If OUT status and not today → idle
-    if (
-      latestAttendance.status === 'out' &&
-      new Date(latestAttendance.outTime).toDateString() !== today
-    ) {
-      return res.json({ status: 'idle' });
-    }
-
-    // If IN/OUT/LEAVE is from today → return it, else idle
-    if (new Date(latestAttendance.createdAt).toDateString() === today) {
-      return res.json({ status: latestAttendance.status });
-    }
-
-    return res.json({ status: 'idle' });
+    // 4. Default: idle
+    res.status(200).json({ status: "idle" });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
-
 
 export const getStarEmployeesForUser = async (req, res) => {
   try {
