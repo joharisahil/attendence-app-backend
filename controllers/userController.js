@@ -55,59 +55,50 @@ export const getMyAttendance = async (req, res) => {
   }
 };
 
-// ✅ (Optional) Get today’s status
 
 export const getMyStatusToday = async (req, res) => {
   try {
-    const email = req.user.email;
+    const userId = req.user.id;
 
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    // Find the latest attendance record for this user
+    const latestAttendance = await Attendance.findOne({ user: userId })
+      .sort({ createdAt: -1 });
 
-    // Get today's date in IST (Indian Standard Time)
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-    const istNow = new Date(now.getTime() + istOffset);
-
-    // Extract only the date portion for comparison
-    const todayDateStr = istNow.toISOString().split('T')[0];
-
-    let statusDate = null;
-
-    if (user.status === 'in' && user.inTime) {
-      const inDateStr = new Date(user.inTime.getTime() + istOffset).toISOString().split('T')[0];
-      statusDate = inDateStr === todayDateStr ? 'in' : 'idle';
-    } else if (user.status === 'out' && user.outTime) {
-      const outDateStr = new Date(user.outTime.getTime() + istOffset).toISOString().split('T')[0];
-      statusDate = outDateStr === todayDateStr ? 'out' : 'idle';
-    } else if (user.status === 'leave') {
-      // Assuming leave is only valid for the day it's set
-      const latestLeave = await Attendance.findOne({
-        email,
-        status: 'leave'
-      }).sort({ date: -1 });
-
-      {
-        const leaveDateStr = new Date(latestLeave.date.getTime() + istOffset).toISOString().split('T')[0];
-        if (leaveDateStr === todayDateStr) {
-          return res.json({ status: 'leave', timestamp: latestLeave.date });
-        }
-      }
-    } else {
-      statusDate = 'idle';
+    if (!latestAttendance) {
+      return res.json({ status: 'idle' });
     }
 
-    return res.json({
-      status: 'idle',
-      timestamp: user.inTime || user.outTime || null,
-    });
+    // Get today's date in simple format
+    const today = new Date().toDateString();
 
-  } catch (err) {
-    console.error('Error fetching status:', err);
-    return res.status(500).json({ message: 'Error checking today\'s status' });
+    // Check for leave status first
+    if (
+      latestAttendance.status === 'leave' &&
+      new Date(latestAttendance.createdAt).toDateString() === today
+    ) {
+      return res.json({ status: 'leave' });
+    }
+
+    // If OUT status and not today → idle
+    if (
+      latestAttendance.status === 'out' &&
+      new Date(latestAttendance.outTime).toDateString() !== today
+    ) {
+      return res.json({ status: 'idle' });
+    }
+
+    // If IN/OUT/LEAVE is from today → return it, else idle
+    if (new Date(latestAttendance.createdAt).toDateString() === today) {
+      return res.json({ status: latestAttendance.status });
+    }
+
+    return res.json({ status: 'idle' });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
   }
 };
-
 
 
 export const getStarEmployeesForUser = async (req, res) => {
