@@ -131,13 +131,42 @@ export const rejectLeave = async (req, res) => {
 };
 
 // GET: Fetch all pending leave requests (Admin only)
+// export const getPendingLeaveRequests = async (req, res) => {
+//   try {
+//     if (req.user.role !== 'admin') {
+//       return res.status(403).json({ message: 'Only admins can view pending leave requests' });
+//     }
+
+//     const pendingRequests = await LeaveRequest.find({ status: 'pending' })
+//       .populate('user', 'name email role')
+//       .sort({ date: 1 }); // oldest first
+
+//     res.status(200).json(pendingRequests);
+//   } catch (error) {
+//     console.error('Error fetching pending leave requests:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// };
+
 export const getPendingLeaveRequests = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Only admins can view pending leave requests' });
     }
 
-    const pendingRequests = await LeaveRequest.find({ status: 'pending' })
+    // Step 1: Get the admin's email
+    const adminEmail = req.user.email;
+
+    // Step 2: Get all team members under this admin
+    const teamMembers = await User.find({ under_admin: adminEmail }).select('_id');
+
+    const teamMemberIds = teamMembers.map(member => member._id);
+
+    // Step 3: Fetch only pending leave requests for these members
+    const pendingRequests = await LeaveRequest.find({
+      status: 'pending',
+      user: { $in: teamMemberIds }
+    })
       .populate('user', 'name email role')
       .sort({ date: 1 }); // oldest first
 
@@ -147,4 +176,3 @@ export const getPendingLeaveRequests = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
