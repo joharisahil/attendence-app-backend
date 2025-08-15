@@ -3,7 +3,9 @@ import {
   getDashboardStats,
   getAllTeamAttendance,
   adminProfile,
-  updateAdminProfile
+  updateAdminProfile,
+  forgotPassword_admin,
+  resetPassword_admin
 } from '../controllers/adminController.js';
 import { getPendingLeaveRequests } from '../controllers/leaveController.js';
 import { protect , isAdmin} from '../middleware/authMiddleware.js';
@@ -19,4 +21,8 @@ router.get('/attendance', protect, isAdmin, getAllTeamAttendance);
 router.get('/profile', protect, isAdmin, adminProfile);
 router.put('/profile/update', protect, isAdmin, updateAdminProfile);
 router.get('/pending', protect, getPendingLeaveRequests);
+router.post('/forgot-password-admin', forgotPassword_admin);
+// POST: Reset the password using token and new password
+router.post('/reset-password-admin', resetPassword_admin);
+
 export default router;
